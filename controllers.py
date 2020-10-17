@@ -10,6 +10,9 @@ from models import User, Task
 
 import hashlib
 
+from auth import auth
+import datetime
+
 app = FastAPI(
     title = 'FastAPI Tutorial TODO',
     descripstion = 'ToDo app with FastAPI and starlette',
@@ -28,25 +31,30 @@ def index(request: Request):
 
 def admin(request: Request, credentials: HTTPBasicCredentials = Depends(security)):
     # Basic認証で受け取った情報
-    username = credentials.username
-    password = hashlib.md5(credentials.password.encode()).hexdigest()
+    username = auth(credentials)
 
     # データベースからユーザ名が一致するデータを取得
     user = db.session.query(User).filter(User.username == username).first()
     task = db.session.query(Task).filter(Task.user_id == user.id).all() if user is not None else []
     db.session.close()
 
-    # 該当ユーザがいない場合
-    if user is None or user.password != password:
-        error = 'ユーザ名かパスワードが間違っています'
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail=error,
-            headers={"WWW-Authenticate": "Basic"},
-        )
+    # 今日の日付と来週の日付
+    today = datetime.datetime.now()
 
-    # 特に問題がなければ管理者ページへ
-    return templates.TemplateResponse('admin.html',
-                                      {'request': request,
-                                       'user': user,
-                                       'task': task})
+    return templates.TemplateResponse('admin.html',{'request': request, 'user': user})
+
+def get(request: Request, credentials: HTTPBasicCredentials = Depends(security)):
+    # auth
+    username = auth(credentials)
+
+    # userdata
+    user = db.session.query(User).filter(User.username == username).first()
+    db.session.close()
+
+    # JSONフォーマット
+    jsondata = {
+        'username': user.username,
+        'content': 'test'
+    }
+
+    return jsondata

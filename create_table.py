@@ -3,6 +3,7 @@ from models import *
 import db
 import os
 
+#password設定などがあるので気をつけること
 
 if __name__ == "__main__":
     path = SQLITE3_NAME
